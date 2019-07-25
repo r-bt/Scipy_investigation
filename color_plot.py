@@ -10,18 +10,20 @@ from functools import partial
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
+import cmocean as cmo
 
 tol = 1e-6
-fill_factors = [8, 9, 10]
-drop_tols = [-1, -2, -3]
-av_iterations = 2
+fill_factors = [1, 2, 5, 6, 7, 8, 9, 10]
+drop_tols = [-1,-2,-3,-4,-5,-6,-7]
+
+av_iterations = 5
 
 #Import our matrices
-f = open("100x100", "rb")
+f = open("50x50", "rb")
 A = pickle.load(f)
 f.close()
 
-f = open("100x100_solution", "rb")
+f = open("50x50_solution", "rb")
 b = np.load(f)
 f.close()
 
@@ -38,7 +40,22 @@ def time_solve(drop_tol, fill_factor):
     print("Completed Fill factor", fill_factor, "at drop tol", 10 ** drop_tol, "in", elapsed)
     return elapsed
 
+def plot(matrix, name="times.png"):
+    flipped = np.flip(matrix, 0)
+    fig, ax = plt.subplots(figsize=(6, 6))
+    im = ax.imshow(np.log10(flipped), interpolation='nearest', cmap=cmo.cm.balance, extent=[-8, -1, 1, 9])
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_xlabel("Drop tolerance (log10)")
+    ax.set_ylabel("Filter factor")
+    plt.yticks([1, 2, 3, 4, 5, 6, 7, 8, 9,], ["1", "2", "5", "6", "7", "8", "9", "10", "11"])
+    plt.title("38000 x 38000 matrix solve time")
+    cbr = fig.colorbar(im)
+    cbr.set_label("log10(time)")
+    fig.savefig(name)
+
 if __name__ == "__main__":
+    multi_start = time.time()
     # s = create_test_vals(1,10,-1,-7,fill_skip=[3,4])
     final = []
     pool = Pool(4)
@@ -55,14 +72,13 @@ if __name__ == "__main__":
     final = np.divide(final, av_iterations)
     print(final)
     #Save these values
-    f = open("results", "ab")
-    pickle.dump(res, f)
+    f = open("results_50x50_grid", "ab")
+    pickle.dump(final, f)
     f.close()
-    #Plot these values
-    fig, ax = plt.subplots(figsize=(6, 6))
-    im = ax.imshow(res, interpolation='nearest', cmap=cm.YlOrRd, extent=[8, 10, -3, -1])
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    fig.colorbar(im)
-    fig.savefig("times.png")
+    # Plot these values
+    plot(final, name="50x50_grid.png")
+    print("Took only", time.time() - multi_start)
+
+
+
 
