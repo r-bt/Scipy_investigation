@@ -16,21 +16,27 @@ tol = 1e-6
 fill_factors = [1, 2, 5, 6, 7, 8, 9, 10]
 drop_tols = [-1,-2,-3,-4,-5,-6,-7]
 
-av_iterations = 5
+size = "100"
+
+av_iterations = 1
 
 #Import our matrices
-f = open("50x50", "rb")
+f = open("{}x{}".format(size, size), "rb")
 A = pickle.load(f)
 f.close()
 
-f = open("50x50_solution", "rb")
+f = open("{}x{}_solution".format(size, size), "rb")
 b = np.load(f)
 f.close()
 
 # Get the time for a given fill_factor at drop_tol
 
 def time_solve(drop_tol, fill_factor):
-    iLU = spilu(A.tocsc(), fill_factor=fill_factor, drop_tol=10 ** drop_tol)
+    try:
+        iLU = spilu(A.tocsc(), fill_factor=fill_factor, drop_tol=10 ** drop_tol)
+    except:
+        print("Runtime error")
+        return np.nan
     iLUx = lambda x: iLU.solve(x)
     P = LinearOperator(A.shape, iLUx)
     ## Solve the equation
@@ -41,15 +47,15 @@ def time_solve(drop_tol, fill_factor):
     return elapsed
 
 def plot(matrix, name="times.png"):
-    flipped = np.flip(matrix, 0)
+    flipped = np.flip(matrix)
     fig, ax = plt.subplots(figsize=(6, 6))
-    im = ax.imshow(np.log10(flipped), interpolation='nearest', cmap=cmo.cm.balance, extent=[-8, -1, 1, 9])
+    im = ax.imshow(np.log10(flipped), interpolation='nearest', cmap=cmo.cm.deep, extent=[-8, -1, 1, 9])
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel("Drop tolerance (log10)")
     ax.set_ylabel("Filter factor")
     plt.yticks([1, 2, 3, 4, 5, 6, 7, 8, 9,], ["1", "2", "5", "6", "7", "8", "9", "10", "11"])
-    plt.title("38000 x 38000 matrix solve time")
+    plt.title("151000 x 151000 matrix solve time")
     cbr = fig.colorbar(im)
     cbr.set_label("log10(time)")
     fig.savefig(name)
@@ -72,11 +78,14 @@ if __name__ == "__main__":
     final = np.divide(final, av_iterations)
     print(final)
     #Save these values
-    f = open("results_50x50_grid", "ab")
+    f = open("results_{}x{}_grid".format(size), "ab")
     pickle.dump(final, f)
     f.close()
     # Plot these values
-    plot(final, name="50x50_grid.png")
+    # f = open("results_25x25_grid", "rb")
+    # final = pickle.load(f)
+    # f.close()
+    plot(final, name="{}x{}_grid.png".format(size))
     print("Took only", time.time() - multi_start)
 
 
